@@ -8,19 +8,21 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background: #0f0c29; color: #fff; min-height: 100vh; padding-bottom: 90px; }
         
-        header { padding: 20px; text-align: center; font-size: 22px; font-weight: bold; color: #00f2fe; }
+        header { padding: 30px 20px 10px 20px; text-align: center; font-size: 26px; font-weight: bold; color: #00f2fe; }
         
-        .search-box { padding: 0 20px; margin-bottom: 20px; display: flex; gap: 10px; }
-        .search-box input { flex: 1; padding: 14px 18px; border-radius: 25px; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 16px; outline: none; }
-        .search-box input::placeholder { color: #bbb; }
-        .search-box button { background: #00f2fe; border: none; color: #0f0c29; padding: 0 22px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .box { padding: 20px; max-width: 500px; margin: 0 auto; text-align: center; }
+        
+        .search-area { display: flex; gap: 10px; margin-top: 20px; }
+        .search-area input { flex: 1; padding: 16px 20px; border-radius: 30px; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 16px; outline: none; }
+        .search-area input::placeholder { color: #bbb; }
+        
+        .btn { background: #00f2fe; border: none; color: #0f0c29; padding: 0 25px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 16px; }
 
-        .container { padding: 0 20px; }
-        .info-card { background: rgba(255,255,255,0.08); padding: 20px; border-radius: 16px; text-align: center; margin-top: 20px; border: 1px solid rgba(255,255,255,0.1); }
-        .info-card h3 { font-size: 18px; margin-bottom: 10px; color: #00f2fe; }
-        .info-card p { font-size: 14px; color: #ccc; margin-bottom: 20px; line-height: 1.5; }
+        .card { background: rgba(255,255,255,0.07); padding: 30px 20px; border-radius: 20px; margin-top: 25px; border: 1px solid rgba(255,255,255,0.1); }
+        .card h3 { font-size: 20px; margin-bottom: 10px; color: #00f2fe; }
+        .card p { font-size: 14px; color: #ccc; margin-bottom: 25px; line-height: 1.6; }
         
-        .yt-btn { display: inline-block; background: #ff0000; color: #fff; padding: 14px 24px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(255,0,0,0.4); }
+        .yt-link { display: inline-block; background: #ff0000; color: #fff; padding: 15px 30px; border-radius: 35px; text-decoration: none; font-weight: bold; font-size: 16px; }
 
         .page { display: none; }
         .page.active { display: block; }
@@ -33,72 +35,67 @@
 </head>
 <body>
 
-    <!-- 1. ANA SAYFA -->
+    <!-- ANA SAYFA -->
     <div id="home-page" class="page active">
         <header>🎵 CepMelodi</header>
+        <div class="box">
+            <div class="search-area">
+                <input type="text" id="q" placeholder="Şarkı veya sanatçı adı...">
+                <button class="btn" onclick="go()">Ara</button>
+            </div>
 
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Şarkı veya sanatçı adı yazın...">
-            <button onclick="openYouTube()">Bul</button>
-        </div>
-
-        <div class="container">
-            <div class="info-card">
-                <h3>Sınırsız Müzik Keyfi</h3>
-                <p>Aradığın tüm yerli, yabancı ve underground şarkılara tek dokunuşla ulaşmak için ismini yaz ve aşağıdaki butona bas.</p>
-                <a id="directLink" href="https://www.youtube.com" target="_blank" class="yt-btn">▶️ YouTube'da Ara ve Dinle</a>
+            <div class="card">
+                <h3>Direk Erişim</h3>
+                <p>Arama kutusuna ne yazarsan yaz, takılma veya hata olmadan doğrudan YouTube üzerinden açılır.</p>
+                <a href="#" onclick="go(); return false;" class="yt-link">▶️ YouTube'da Aç</a>
             </div>
         </div>
     </div>
 
-    <!-- 2. MÜZİKLERİM -->
+    <!-- MÜZİKLERİM -->
     <div id="downloads-page" class="page">
         <header>📂 Müziklerim</header>
-        <div class="container">
-            <div class="info-card">
-                <p style="color:#aaa;">Henüz kaydedilen müzik yok.</p>
+        <div class="box">
+            <div class="card">
+                <p style="color:#aaa;">Kayıtlı müzik bulunmuyor.</p>
             </div>
         </div>
     </div>
 
     <!-- ALT MENÜ -->
     <nav>
-        <button id="nav-home" class="active" onclick="switchPage('home')">
+        <button id="n1" class="active" onclick="tab('home')">
             <span>🏠</span> Ana Sayfa
         </button>
-        <button id="nav-downloads" onclick="switchPage('downloads')">
+        <button id="n2" onclick="tab('downloads')">
             <span>📂</span> Müziklerim
         </button>
     </nav>
 
     <script>
-        function switchPage(pageName) {
+        function tab(t) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-            
-            if(pageName === 'home') {
+            if(t === 'home') {
                 document.getElementById('home-page').classList.add('active');
-                document.getElementById('nav-home').classList.add('active');
+                document.getElementById('n1').classList.add('active');
             } else {
                 document.getElementById('downloads-page').classList.add('active');
-                document.getElementById('nav-downloads').classList.add('active');
+                document.getElementById('n2').classList.add('active');
             }
         }
 
-        function openYouTube() {
-            let query = document.getElementById('searchInput').value.trim();
-            if(!query) {
+        function go() {
+            let val = document.getElementById('q').value.trim();
+            if(!val) {
                 alert("Lütfen bir şeyler yazın!");
                 return;
             }
-            let url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-            window.location.href = url;
+            window.location.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(val);
         }
 
-        document.getElementById('searchInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                openYouTube();
-            }
+        document.getElementById('q').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') { go(); }
         });
     </script>
 </body>
