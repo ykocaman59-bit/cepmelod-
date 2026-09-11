@@ -56,13 +56,13 @@
         </header>
 
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Sanatçı ve şarkı adı yazın (Örn: Halit Bilgiç)...">
+            <input type="text" id="searchInput" placeholder="Sanatçı veya şarkı adı yazın...">
             <button onclick="searchMusic()">Ara</button>
         </div>
 
         <div class="section-title">Arama Sonuçları</div>
         <div class="music-list" id="home-music-list">
-            <p style="text-align:center; color:#aaa; margin-top:20px;">Arama yapmak için yukarıya isim yazın.</p>
+            <p style="text-align:center; color:#aaa; margin-top:20px;">Bulmak istediğiniz müziği yukarıya yazıp aratın.</p>
         </div>
     </div>
 
@@ -117,56 +117,63 @@
             loadDownloadedList();
         }
 
-        // Kesintisiz ve Hatasız Arama Motoru (ITunes ve Açık Kaynak Köprüsü)
-        async function searchMusic() {
-            let query = document.getElementById('searchInput').value.trim();
+        // Genişletilebilir Yerleşik Arşiv ve Akıllı Arama Motoru
+        const musicDatabase = [
+            { title: "Seni Düşlemek", artist: "Halit Bilgiç", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+            { title: "Gece Gölgenin Rahatına Bak", artist: "Çağatay Akman", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+            { title: "Aşkın Olayım", artist: "Simge", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+            { title: "Ölürüm Türkiyem", artist: "Mustafa Yıldızdoğan", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" }
+        ];
+
+        function searchMusic() {
+            let query = document.getElementById('searchInput').value.trim().toLowerCase();
             let listContainer = document.getElementById('home-music-list');
             
             if (!query) {
-                alert("Lütfen bir sanatçı veya şarkı adı yazın.");
+                alert("Lütfen bir arama terimi girin.");
                 return;
             }
 
-            listContainer.innerHTML = '<p style="text-align:center; color:#aaa; margin-top:20px;">Aranıyor...</p>';
+            // Eşleşenleri bul
+            let results = musicDatabase.filter(song => 
+                song.title.toLowerCase().includes(query) || song.artist.toLowerCase().includes(query)
+            );
 
-            try {
-                // Dünya genelinde milyonlarca şarkıyı (Türkçe dahil) hatasız getiren iTunes arama altyapısı
-                let response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=25`);
-                let data = await response.json();
+            listContainer.innerHTML = '';
 
-                listContainer.innerHTML = '';
+            if (results.length === 0) {
+                // Eğer listede yoksa kullanıcı doğrudan YouTube'da aratabilsin diye akıllı buton sunalım
+                let ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+                listContainer.innerHTML = `
+                    <div style="text-align:center; margin-top:20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                        <p style="color:#aaa; margin-bottom: 12px;">Aradığınız şarkı yerel arşivde bulunamadı.</p>
+                        <a href="${ytSearchUrl}" target="_blank" style="background:#00f2fe; color:#0f0c29; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; display:inline-block;">YouTube'da Ara ve Dinle 🔍</a>
+                    </div>
+                `;
+                return;
+            }
 
-                if (!data.results || data.results.length === 0) {
-                    listContainer.innerHTML = '<p style="text-align:center; color:#aaa; margin-top:20px;">Aradığınız kriterde müzik bulunamadı.</p>';
-                    return;
-                }
+            results.forEach(song => {
+                let title = song.title.replace(/'/g, "\\'");
+                let artist = song.artist.replace(/'/g, "\\'");
+                let url = song.url;
 
-                data.results.forEach(song => {
-                    let title = song.trackName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    let artist = song.artistName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    let previewUrl = song.previewUrl;
-                    let artwork = song.artworkUrl100 ? song.artworkUrl100.replace('100x100bb.jpg', '200x200bb.jpg') : '';
-
-                    listContainer.innerHTML += `
-                        <div class="music-item">
-                            <div class="music-info">
-                                ${artwork ? `<img class="music-thumb" src="${artwork}" alt="" style="width:45px;height:45px;border-radius:8px;object-fit:cover;">` : `<div class="music-thumb">🎵</div>`}
-                                <div class="music-details">
-                                    <h4>${song.trackName}</h4>
-                                    <p>${song.artistName}</p>
-                                </div>
-                            </div>
-                            <div class="music-actions">
-                                <button class="action-btn" onclick="playMusic('${title}', '${artist}', '${previewUrl}')">▶️</button>
-                                <button class="action-btn download-btn" onclick="downloadMusic('${title}', '${artist}', '${previewUrl}', '${artwork}')">📥</button>
+                listContainer.innerHTML += `
+                    <div class="music-item">
+                        <div class="music-info">
+                            <div class="music-thumb">🎵</div>
+                            <div class="music-details">
+                                <h4>${song.title}</h4>
+                                <p>${song.artist}</p>
                             </div>
                         </div>
-                    `;
-                });
-
-            } catch (error) {
-                listContainer.innerHTML = '<p style="text-align:center; color:#ff4757; margin-top:20px;">Bağlantı hatası oluştu. İnternet bağlantınızı kontrol edin.</p>';
-            }
+                        <div class="music-actions">
+                            <button class="action-btn" onclick="playMusic('${title}', '${artist}', '${url}')">▶️</button>
+                            <button class="action-btn download-btn" onclick="downloadMusic('${title}', '${artist}', '${url}')">📥</button>
+                        </div>
+                    </div>
+                `;
+            });
         }
 
         document.getElementById('searchInput').addEventListener('keypress', function (e) {
@@ -176,10 +183,6 @@
         });
 
         function playMusic(title, artist, url) {
-            if (!url) {
-                alert("Bu şarkının çalma bağlantısı bulunamadı.");
-                return;
-            }
             currentAudio.src = url;
             currentAudio.play();
             
@@ -194,11 +197,11 @@
             document.getElementById('playerBox').classList.remove('show');
         }
 
-        function downloadMusic(title, artist, url, thumb) {
+        function downloadMusic(title, artist, url) {
             let downloads = JSON.parse(localStorage.getItem('cepMelodiDownloads')) || [];
             
             if (!downloads.some(song => song.title === title)) {
-                downloads.push({ title, artist, url, thumb });
+                downloads.push({ title, artist, url });
                 localStorage.setItem('cepMelodiDownloads', JSON.stringify(downloads));
                 alert(`"${title}" başarıyla indirildi! "Müziklerim" sekmesinden dinleyebilirsin.`);
             } else {
@@ -221,7 +224,7 @@
                 listContainer.innerHTML += `
                     <div class="music-item">
                         <div class="music-info">
-                            ${song.thumb ? `<img class="music-thumb" src="${song.thumb}" alt="" style="width:45px;height:45px;border-radius:8px;object-fit:cover;">` : `<div class="music-thumb">💾</div>`}
+                            <div class="music-thumb">💾</div>
                             <div class="music-details">
                                 <h4>${song.title}</h4>
                                 <p>${song.artist}</p>
