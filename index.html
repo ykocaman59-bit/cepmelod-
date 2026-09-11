@@ -21,7 +21,7 @@
         .music-list { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
         .music-item { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.07); padding: 10px 15px; border-radius: 12px; transition: 0.2s; }
         .music-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-        .music-thumb { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+        .music-thumb { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: #333; display: flex; align-items: center; justify-content: center; font-size: 20px; }
         .music-details { min-width: 0; }
         .music-details h4 { font-size: 14px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .music-details p { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -56,13 +56,13 @@
         </header>
 
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Sanatçı veya şarkı adı yazın (Örn: Tarkan Şımarık)...">
+            <input type="text" id="searchInput" placeholder="Şarkı veya sanatçı adı yazın...">
             <button onclick="searchMusic()">Ara</button>
         </div>
 
-        <div class="section-title" id="results-title">Popüler / Önerilen Şarkılar</div>
+        <div class="section-title" id="results-title">Arama Sonuçları</div>
         <div class="music-list" id="home-music-list">
-            <!-- Dinamik arama sonuçları buraya gelecek -->
+            <!-- Sonuçlar buraya gelecek -->
         </div>
     </div>
 
@@ -78,7 +78,7 @@
     <!-- MİNİ OYNATICI -->
     <div class="mini-player" id="miniPlayer">
         <div class="music-info">
-            <img id="player-thumb" class="music-thumb" src="" style="width:35px;height:35px;" alt="">
+            <div id="player-thumb" class="music-thumb" style="width:35px;height:35px;font-size:14px;">🎶</div>
             <div class="music-details">
                 <h4 id="player-title">Şarkı Adı</h4>
                 <p id="player-artist">Sanatçı</p>
@@ -102,7 +102,6 @@
     <script>
         let currentAudio = document.getElementById('audioElement');
 
-        // Sayfa Değiştirme
         function goHome() {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('home-page').classList.add('active');
@@ -118,73 +117,71 @@
             loadDownloadedList();
         }
 
-        // Dünya Çapında Müzik Arama (Deezer API Entegrasyonu)
+        // Kesintisiz Çalışan Jamendo Müzik Arama API
         async function searchMusic() {
             let query = document.getElementById('searchInput').value.trim();
             let listContainer = document.getElementById('home-music-list');
             
             if (!query) {
-                alert("Lütfen bir sanatçı veya şarkı adı girin.");
+                alert("Lütfen aramak istediğiniz şarkı veya sanatçı adını yazın.");
                 return;
             }
 
             listContainer.innerHTML = '<p style="text-align:center; color:#aaa; margin-top:20px;">Aranıyor...</p>';
 
             try {
-                // CORS engeline takılmamak için public proxy veya doğrudan API
-                let response = await fetch(`https://api.allorigins.win/raw?url=` + encodeURIComponent(`https://api.deezer.com/search?q=${query}`));
+                // Jamendo açık API (client_id 58342478 açık test anahtarıdır)
+                let url = `https://api.jamendo.com/v3.0/tracks/?client_id=58342478&format=jsonjson&limit=20&namesearch=${encodeURIComponent(query)}`;
+                let response = await fetch(url);
                 let data = await response.json();
 
                 listContainer.innerHTML = '';
 
-                if (!data.data || data.data.length === 0) {
-                    listContainer.innerHTML = '<p style="text-align:center; color:#aaa; margin-top:20px;">Hiçbir şarkı bulunamadı.</p>';
+                if (!data.results || data.results.length === 0) {
+                    listContainer.innerHTML = '<p style="text-align:center; color:#aaa; margin-top:20px;">Aradığınız kriterde müzik bulunamadı.</p>';
                     return;
                 }
 
-                data.data.forEach(song => {
-                    let title = song.title.replace(/'/g, "\\'");
-                    let artist = song.artist.name.replace(/'/g, "\\'");
-                    let previewUrl = song.preview;
-                    let coverImg = song.album.cover_medium;
+                data.results.forEach(song => {
+                    let title = song.name.replace(/'/g, "\\'");
+                    let artist = song.artist_name.replace(/'/g, "\\'");
+                    let audioUrl = song.audio;
+                    let coverImg = song.image || '';
 
                     listContainer.innerHTML += `
                         <div class="music-item">
                             <div class="music-info">
-                                <img class="music-thumb" src="${coverImg}" alt="">
+                                ${coverImg ? `<img class="music-thumb" src="${coverImg}" alt="">` : `<div class="music-thumb">🎵</div>`}
                                 <div class="music-details">
-                                    <h4>${song.title}</h4>
-                                    <p>${song.artist.name} • ${Math.floor(song.duration / 60)}:${(song.duration % 60).toString().padStart(2, '0')}</p>
+                                    <h4>${song.name}</h4>
+                                    <p>${song.artist_name}</p>
                                 </div>
                             </div>
                             <div class="music-actions">
-                                <button class="action-btn" onclick="playMusic('${title}', '${artist}', '${previewUrl}', '${coverImg}')">▶️</button>
-                                <button class="action-btn download-btn" onclick="downloadMusic('${title}', '${artist}', '${previewUrl}', '${coverImg}')">📥</button>
+                                <button class="action-btn" onclick="playMusic('${title}', '${artist}', '${audioUrl}')">▶️</button>
+                                <button class="action-btn download-btn" onclick="downloadMusic('${title}', '${artist}', '${audioUrl}', '${coverImg}')">📥</button>
                             </div>
                         </div>
                     `;
                 });
 
             } catch (error) {
-                listContainer.innerHTML = '<p style="text-align:center; color:#ff4757; margin-top:20px;">Bağlantı hatası oluştu. Lütfen tekrar deneyin.</p>';
+                listContainer.innerHTML = '<p style="text-align:center; color:#ff4757; margin-top:20px;">Arama yapılırken bir hata oluştu.</p>';
             }
         }
 
-        // Enter tuşu ile arama yapabilme
         document.getElementById('searchInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 searchMusic();
             }
         });
 
-        // Müzik Çalma
-        function playMusic(title, artist, url, thumb) {
+        function playMusic(title, artist, url) {
             currentAudio.src = url;
             currentAudio.play();
             
             document.getElementById('player-title').innerText = title;
             document.getElementById('player-artist').innerText = artist;
-            document.getElementById('player-thumb').src = thumb;
             document.getElementById('miniPlayer').classList.add('show');
         }
 
@@ -193,7 +190,6 @@
             document.getElementById('miniPlayer').classList.remove('show');
         }
 
-        // İndirme (LocalStorage'a kaydetme)
         function downloadMusic(title, artist, url, thumb) {
             let downloads = JSON.parse(localStorage.getItem('cepMelodiDownloads')) || [];
             
@@ -206,10 +202,9 @@
             }
         }
 
-        // İndirilenleri Listeleme
         function loadDownloadedList() {
             let listContainer = document.getElementById('downloaded-music-list');
-            let downloads = JSON.parse(localStorage.getItem('cepMelodiDownloads')) || [];
+            let downloads = JSON.parse(localStorage.getItem('cepMeloiDownloads') || localStorage.getItem('cepMelodiDownloads')) || [];
             
             listContainer.innerHTML = '';
 
@@ -222,15 +217,15 @@
                 listContainer.innerHTML += `
                     <div class="music-item">
                         <div class="music-info">
-                            <img class="music-thumb" src="${song.thumb}" alt="">
+                            ${song.thumb ? `<img class="music-thumb" src="${song.thumb}" alt="">` : `<div class="music-thumb">💾</div>`}
                             <div class="music-details">
                                 <h4>${song.title}</h4>
                                 <p>${song.artist}</p>
                             </div>
                         </div>
                         <div class="music-actions">
-                            <button class="action-btn" onclick="playMusic('${song.title}', '${song.artist}', '${song.url}', '${song.thumb}')">▶️</button>
-                            <button class="action-btn delete-btn" onclick="removeDownload(${index})">🗑️</name>
+                            <button class="action-btn" onclick="playMusic('${song.title}', '${song.artist}', '${song.url}')">▶️</button>
+                            <button class="action-btn delete-btn" onclick="removeDownload(${index})">🗑️</button>
                         </div>
                     </div>
                 `;
@@ -244,8 +239,8 @@
             loadDownloadedList();
         }
 
-        // Sayfa ilk açıldığında popüler birkaç şey getirmek için rastgele arama yapabiliriz
-        document.getElementById('searchInput').value = "Tarkan";
+        // Açılışta örnek arama yap
+        document.getElementById('searchInput').value = "acoustic";
         searchMusic();
     </script>
 </body>
