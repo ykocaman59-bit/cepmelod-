@@ -10,9 +10,10 @@
         
         header { padding: 20px; text-align: center; font-size: 22px; font-weight: bold; color: #00f2fe; }
         
-        .search-area { padding: 10px 20px; display: flex; gap: 10px; max-width: 600px; margin: 0 auto; }
-        .search-area input { flex: 1; padding: 12px 20px; border-radius: 30px; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 15px; outline: none; }
-        .search-area button { background: #00f2fe; border: none; color: #0f0c29; padding: 0 25px; border-radius: 30px; font-weight: bold; cursor: pointer; }
+        .search-area { padding: 10px 20px; display: flex; flex-direction: column; gap: 10px; max-width: 600px; margin: 0 auto; }
+        .search-row { display: flex; gap: 10px; }
+        .search-row input { flex: 1; padding: 12px 20px; border-radius: 30px; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 14px; outline: none; }
+        .search-row button { background: #00ff88; border: none; color: #0f0c29; padding: 0 20px; border-radius: 30px; font-weight: bold; cursor: pointer; }
 
         .container { padding: 10px 20px; max-width: 600px; margin: 0 auto; }
         
@@ -21,7 +22,7 @@
         .song-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
         
         .btn-group { display: flex; gap: 6px; }
-        .btn-action { background: #00f2fe; border: none; color: #0f0c29; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-action { background: #00f2fe; border: none; color: #0f0c29; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; text-decoration: none; display: flex; align-items: center; }
         .btn-download { background: #00ff88; }
 
         /* Sabit Alt Oynatıcı */
@@ -35,8 +36,6 @@
         nav button { background: none; border: none; color: #aaa; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
         nav button.active { color: #00f2fe; }
         nav button span { font-size: 20px; }
-        
-        .local-upload { background: rgba(255,255,255,0.05); border: 2px dashed rgba(255,255,255,0.2); padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -45,11 +44,13 @@
     <div id="home-page" class="page active">
         <header>🎵 CepMelodi</header>
         <div class="search-area">
-            <input type="text" id="searchInput" placeholder="Şarkı veya sanatçı adı yazın...">
-            <button onclick="searchMusic()">Ara</button>
+            <div class="search-row">
+                <input type="text" id="urlInput" placeholder="YouTube şarkı linkini buraya yapıştır...">
+                <button onclick="processLink()">İndir & Dinle</button>
+            </div>
         </div>
         <div class="container" id="resultsList">
-            <p style="text-align:center; color:#888; margin-top:30px;">Dinlemek veya indirmek istediğiniz şarkıyı aratın.</p>
+            <p style="text-align:center; color:#888; margin-top:30px;">YouTube linkini yapıştırarak hızlıca müzik ekleyin.</p>
         </div>
     </div>
 
@@ -57,12 +58,8 @@
     <div id="downloads-page" class="page">
         <header>📂 Müziklerim</header>
         <div class="container">
-            <div class="local-upload" onclick="document.getElementById('deviceMusic').click()">
-                📱 Telefon Hafızasından Müzik Ekle
-                <input type="file" id="deviceMusic" accept="audio/*" multiple style="display:none" onchange="loadDeviceMusic(this)">
-            </div>
             <div id="myMusicList">
-                <p style="text-align:center; color:#888;">Henüz indirilen veya eklenen müzik yok.</p>
+                <p style="text-align:center; color:#888;">Henüz eklenen müzik yok.</p>
             </div>
         </div>
     </div>
@@ -91,46 +88,44 @@
             }
         }
 
-        async function searchMusic() {
-            let query = document.getElementById('searchInput').value.trim();
+        // YouTube linkinden video ID'sini ayıklama fonksiyonu
+        function extractVideoId(url) {
+            let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            let match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function processLink() {
+            let url = document.getElementById('urlInput').value.trim();
             let resultsList = document.getElementById('resultsList');
-            if(!query) return alert("Lütfen bir şeyler yazın!");
+            let videoId = extractVideoId(url);
 
-            resultsList.innerHTML = "<p style='text-align:center; color:#00f2fe;'>Aratılıyor...</p>";
-
-            try {
-                // Ücretsiz ve açık kaynaklı Invidious API örneği üzerinden arama
-                let response = await fetch(`https://invidious.projectsegfau.lt/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-                let data = await response.json();
-
-                resultsList.innerHTML = "";
-                if(data.length === 0) {
-                    resultsList.innerHTML = "<p style='text-align:center; color:#aaa;'>Şarkı bulunamadı.</p>";
-                    return;
-                }
-
-                data.slice(0, 15).forEach(video => {
-                    let videoId = video.videoId;
-                    let title = video.title;
-                    // Doğrudan ses akış ve indirme bağlantısı (itag 140 = M4A/MP3 uyumlu ses akışı)
-                    let audioUrl = `https://invidious.projectsegfau.lt/latest_version?id=${videoId}&itag=140`;
-
-                    let card = document.createElement('div');
-                    card.className = 'song-card';
-                    card.innerHTML = `
-                        <div class="song-info">
-                            <div class="song-title">${title}</div>
-                        </div>
-                        <div class="btn-group">
-                            <button class="btn-action" onclick="playMusic('${audioUrl}')">▶ Dinle</button>
-                            <a href="${audioUrl}" download="${title}.m4a" class="btn-action btn-download" style="text-decoration:none; display:flex; align-items:center;">İndir</a>
-                        </div>
-                    `;
-                    resultsList.appendChild(card);
-                });
-            } catch (err) {
-                resultsList.innerHTML = "<p style='text-align:center; color:#ff4444;'>Bağlantı hatası oluştu, lütfen tekrar deneyin.</p>";
+            if(!videoId) {
+                alert("Geçerli bir YouTube linki yapıştırın!");
+                return;
             }
+
+            // Ücretsiz Invidious ses akış bağlantısı
+            let audioUrl = `https://invidious.projectsegfau.lt/latest_version?id=${videoId}&itag=140`;
+            let songTitle = "YouTube Müzik (" + videoId + ")";
+
+            resultsList.innerHTML = "";
+
+            let card = document.createElement('div');
+            card.className = 'song-card';
+            card.innerHTML = `
+                <div class="song-info">
+                    <div class="song-title">${songTitle}</div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-action" onclick="playMusic('${audioUrl}')">▶ Dinle</button>
+                    <a href="${audioUrl}" download="miks.m4a" class="btn-action btn-download">Cihaza İndir</a>
+                </div>
+            `;
+            resultsList.appendChild(card);
+
+            // Aynı zamanda otomatik olarak "Müziklerim" listesine de ekleyelim
+            addToMyMusic(songTitle, audioUrl);
         }
 
         function playMusic(url) {
@@ -141,23 +136,21 @@
             audioPlayer.play();
         }
 
-        function loadDeviceMusic(input) {
-            let list = document.getElementById('myMusicList');
-            if(input.files.length > 0) {
-                list.innerHTML = "";
-                Array.from(input.files).forEach(file => {
-                    let songUrl = URL.createObjectURL(file);
-                    let card = document.createElement('div');
-                    card.className = 'song-card';
-                    card.innerHTML = `
-                        <div class="song-info">
-                            <div class="song-title">${file.name}</div>
-                        </div>
-                        <button class="btn-action" onclick="playMusic('${songUrl}')">▶ Oynat</button>
-                    `;
-                    list.appendChild(card);
-                });
+        function addToMyMusic(title, url) {
+            let myMusicList = document.getElementById('myMusicList');
+            if(myMusicList.innerHTML.includes("Henüz eklenen müzik yok.")) {
+                myMusicList.innerHTML = "";
             }
+
+            let card = document.createElement('div');
+            card.className = 'song-card';
+            card.innerHTML = `
+                <div class="song-info">
+                    <div class="song-title">${title}</div>
+                </div>
+                <button class="btn-action" onclick="playMusic('${url}')">▶ Oynat</button>
+            `;
+            myMusicList.appendChild(card);
         }
     </script>
 </body>
