@@ -46,7 +46,7 @@
         <div class="search-area">
             <div class="search-row">
                 <input type="text" id="urlInput" placeholder="YouTube şarkı linkini buraya yapıştır...">
-                <button onclick="processLink()">İndir & Dinle</button>
+                <button onclick="processLink()">Ekle</button>
             </div>
         </div>
         <div class="container" id="resultsList">
@@ -57,10 +57,8 @@
     <!-- MÜZİKLERİM -->
     <div id="downloads-page" class="page">
         <header>📂 Müziklerim</header>
-        <div class="container">
-            <div id="myMusicList">
-                <p style="text-align:center; color:#888;">Henüz eklenen müzik yok.</p>
-            </div>
+        <div class="container" id="myMusicList">
+            <p style="text-align:center; color:#888;">Henüz eklenen müzik yok.</p>
         </div>
     </div>
 
@@ -88,14 +86,13 @@
             }
         }
 
-        // YouTube linkinden video ID'sini ayıklama fonksiyonu
         function extractVideoId(url) {
             let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             let match = url.match(regExp);
             return (match && match[2].length === 11) ? match[2] : null;
         }
 
-        function processLink() {
+        async function processLink() {
             let url = document.getElementById('urlInput').value.trim();
             let resultsList = document.getElementById('resultsList');
             let videoId = extractVideoId(url);
@@ -105,38 +102,46 @@
                 return;
             }
 
-            // Ücretsiz Invidious ses akış bağlantısı
-            let audioUrl = `https://invidious.projectsegfau.lt/latest_version?id=${videoId}&itag=140`;
-            let songTitle = "YouTube Müzik (" + videoId + ")";
+            resultsList.innerHTML = "<p style='text-align:center; color:#00f2fe;'>Şarkı bilgileri alınıyor...</p>";
 
-            resultsList.innerHTML = "";
+            try {
+                // Şarkı adını YouTube'un resmi oembed servisi üzerinden tamamen ücretsiz ve hatasız çekiyoruz
+                let res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+                let data = await res.json();
+                let songTitle = data.title || "Halit Bilgiç Şarkısı";
 
-            let card = document.createElement('div');
-            card.className = 'song-card';
-            card.innerHTML = `
-                <div class="song-info">
-                    <div class="song-title">${songTitle}</div>
-                </div>
-                <div class="btn-group">
-                    <button class="btn-action" onclick="playMusic('${audioUrl}')">▶ Dinle</button>
-                    <a href="${audioUrl}" download="miks.m4a" class="btn-action btn-download">Cihaza İndir</a>
-                </div>
-            `;
-            resultsList.appendChild(card);
+                // Doğrudan kararlı oynatıcı ve ses kaynağı
+                let streamUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
 
-            // Aynı zamanda otomatik olarak "Müziklerim" listesine de ekleyelim
-            addToMyMusic(songTitle, audioUrl);
+                resultsList.innerHTML = "";
+
+                let card = document.createElement('div');
+                card.className = 'song-card';
+                card.innerHTML = `
+                    <div class="song-info">
+                        <div class="song-title">${songTitle}</div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-action" onclick="playEmbed('${videoId}')">▶ Dinle</button>
+                    </div>
+                `;
+                resultsList.appendChild(card);
+
+                addToMyMusic(songTitle, videoId);
+                document.getElementById('urlInput').value = "";
+            } catch (err) {
+                resultsList.innerHTML = "<p style='text-align:center; color:#ff4444;'>Şarkı bilgisi alınamadı, lütfen tekrar deneyin.</p>";
+            }
         }
 
-        function playMusic(url) {
+        function playEmbed(videoId) {
             let playerBar = document.getElementById('playerBar');
-            let audioPlayer = document.getElementById('audioPlayer');
             playerBar.style.display = 'flex';
-            audioPlayer.src = url;
-            audioPlayer.play();
+            // Uygulama içinde kapanmadan çalması için mini oynatıcı alanına iframe entegre edebiliriz
+            playerBar.innerHTML = `<iframe width="100%" height="45" src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0" allow="autoplay"></iframe>`;
         }
 
-        function addToMyMusic(title, url) {
+        function addToMyMusic(title, videoId) {
             let myMusicList = document.getElementById('myMusicList');
             if(myMusicList.innerHTML.includes("Henüz eklenen müzik yok.")) {
                 myMusicList.innerHTML = "";
@@ -148,7 +153,7 @@
                 <div class="song-info">
                     <div class="song-title">${title}</div>
                 </div>
-                <button class="btn-action" onclick="playMusic('${url}')">▶ Oynat</button>
+                <button class="btn-action" onclick="playEmbed('${videoId}')">▶ Oynat</button>
             `;
             myMusicList.appendChild(card);
         }
