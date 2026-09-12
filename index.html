@@ -6,36 +6,37 @@
     <title>CepMelodi</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #0f0c29; color: #fff; min-height: 100vh; padding-bottom: 90px; }
+        body { background: #0f0c29; color: #fff; min-height: 100vh; padding-bottom: 110px; }
         
-        header { padding: 25px 20px 10px 20px; text-align: center; font-size: 24px; font-weight: bold; color: #00f2fe; }
+        header { padding: 20px; text-align: center; font-size: 22px; font-weight: bold; color: #00f2fe; }
         
-        .search-area { padding: 15px 20px; display: flex; gap: 10px; max-width: 600px; margin: 0 auto; }
-        .search-area input { flex: 1; padding: 14px 20px; border-radius: 30px; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 15px; outline: none; }
-        .search-area input::placeholder { color: #bbb; }
-        .search-area button { background: #00f2fe; border: none; color: #0f0c29; padding: 0 25px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .search-area { padding: 10px 20px; display: flex; gap: 10px; max-width: 600px; margin: 0 auto; }
+        .search-area input { flex: 1; padding: 12px 20px; border-radius: 30px; border: none; background: rgba(255,255,255,0.15); color: #fff; font-size: 15px; outline: none; }
+        .search-area button { background: #00f2fe; border: none; color: #0f0c29; padding: 0 25px; border-radius: 30px; font-weight: bold; cursor: pointer; }
 
-        .container { padding: 15px 20px; max-width: 600px; margin: 0 auto; }
+        .container { padding: 10px 20px; max-width: 600px; margin: 0 auto; }
         
-        #results-container { display: none; margin-top: 15px; }
-        .player-box { background: rgba(255,255,255,0.07); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); padding: 10px; }
+        .song-card { background: rgba(255,255,255,0.07); padding: 12px 15px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1); }
+        .song-info { flex: 1; overflow: hidden; margin-right: 10px; }
+        .song-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
         
-        iframe { width: 100%; height: 260px; border-radius: 12px; border: none; }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-action { background: #00f2fe; border: none; color: #0f0c29; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-download { background: #00ff88; }
 
-        .welcome-card { background: rgba(255,255,255,0.07); padding: 25px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-top: 15px; }
-        .welcome-card h3 { font-size: 18px; margin-bottom: 10px; color: #00f2fe; }
-        .welcome-card p { font-size: 14px; color: #ccc; line-height: 1.5; }
+        /* Sabit Alt Oynatıcı */
+        .player-bar { position: fixed; bottom: 70px; left: 0; width: 100%; background: #1a1638; padding: 10px 20px; display: none; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); }
+        .player-bar audio { width: 100%; height: 35px; }
 
         .page { display: none; }
         .page.active { display: block; }
 
         nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #13102b; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
-        nav button { background: none; border: none; color: #aaa; font-size: 13px; display: flex; flex_direction: column; align-items: center; gap: 4px; cursor: pointer; }
+        nav button { background: none; border: none; color: #aaa; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
         nav button.active { color: #00f2fe; }
         nav button span { font-size: 20px; }
-
-        .action-btns { display: flex; gap: 10px; margin-top: 10px; }
-        .action-btns button { flex: 1; padding: 10px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: #00f2fe; color: #0f0c29; }
+        
+        .local-upload { background: rgba(255,255,255,0.05); border: 2px dashed rgba(255,255,255,0.2); padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -43,26 +44,12 @@
     <!-- ANA SAYFA -->
     <div id="home-page" class="page active">
         <header>🎵 CepMelodi</header>
-
         <div class="search-area">
             <input type="text" id="searchInput" placeholder="Şarkı veya sanatçı adı yazın...">
-            <button onclick="searchInApp()">Bul</button>
+            <button onclick="searchMusic()">Ara</button>
         </div>
-
-        <div class="container">
-            <div id="welcomeCard" class="welcome-card">
-                <h3>Uygulama İçi Müzik Keyfi</h3>
-                <p>Aradığın şarkıları dışarı çıkmadan, doğrudan bu ekran üzerinden dinleyebilir ve keyfini çıkarabilirsin.</p>
-            </div>
-
-            <div id="results-container">
-                <div class="player-box">
-                    <div id="embedArea"></div>
-                    <div class="action-btns">
-                        <button onclick="alert('İndirme özelliği yakında eklenecek!')">📥 Şarkıyı İndir</button>
-                    </div>
-                </div>
-            </div>
+        <div class="container" id="resultsList">
+            <p style="text-align:center; color:#888; margin-top:30px;">Dinlemek veya indirmek istediğiniz şarkıyı aratın.</p>
         </div>
     </div>
 
@@ -70,27 +57,31 @@
     <div id="downloads-page" class="page">
         <header>📂 Müziklerim</header>
         <div class="container">
-            <div class="welcome-card">
-                <p style="color:#aaa;">Henüz kaydedilen müzik bulunmuyor.</p>
+            <div class="local-upload" onclick="document.getElementById('deviceMusic').click()">
+                📱 Telefon Hafızasından Müzik Ekle
+                <input type="file" id="deviceMusic" accept="audio/*" multiple style="display:none" onchange="loadDeviceMusic(this)">
+            </div>
+            <div id="myMusicList">
+                <p style="text-align:center; color:#888;">Henüz indirilen veya eklenen müzik yok.</p>
             </div>
         </div>
     </div>
 
+    <!-- SABİT OYNATICI -->
+    <div class="player-bar" id="playerBar">
+        <audio id="audioPlayer" controls></audio>
+    </div>
+
     <!-- ALT MENÜ -->
     <nav>
-        <button id="nav-home" class="active" onclick="switchTab('home')">
-            <span>🏠</span> Ana Sayfa
-        </button>
-        <button id="nav-downloads" onclick="switchTab('downloads')">
-            <span>📂</span> Müziklerim
-        </button>
+        <button id="nav-home" class="active" onclick="switchTab('home')"><span>🏠</span> Ana Sayfa</button>
+        <button id="nav-downloads" onclick="switchTab('downloads')"><span>📂</span> Müziklerim</button>
     </nav>
 
     <script>
         function switchTab(tabName) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-            
             if(tabName === 'home') {
                 document.getElementById('home-page').classList.add('active');
                 document.getElementById('nav-home').classList.add('active');
@@ -100,30 +91,74 @@
             }
         }
 
-        function searchInApp() {
+        async function searchMusic() {
             let query = document.getElementById('searchInput').value.trim();
-            if(!query) {
-                alert("Lütfen bir şarkı veya sanatçı adı yazın!");
-                return;
+            let resultsList = document.getElementById('resultsList');
+            if(!query) return alert("Lütfen bir şeyler yazın!");
+
+            resultsList.innerHTML = "<p style='text-align:center; color:#00f2fe;'>Aratılıyor...</p>";
+
+            try {
+                // Ücretsiz ve açık kaynaklı Invidious API örneği üzerinden arama
+                let response = await fetch(`https://invidious.projectsegfau.lt/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
+                let data = await response.json();
+
+                resultsList.innerHTML = "";
+                if(data.length === 0) {
+                    resultsList.innerHTML = "<p style='text-align:center; color:#aaa;'>Şarkı bulunamadı.</p>";
+                    return;
+                }
+
+                data.slice(0, 15).forEach(video => {
+                    let videoId = video.videoId;
+                    let title = video.title;
+                    // Doğrudan ses akış ve indirme bağlantısı (itag 140 = M4A/MP3 uyumlu ses akışı)
+                    let audioUrl = `https://invidious.projectsegfau.lt/latest_version?id=${videoId}&itag=140`;
+
+                    let card = document.createElement('div');
+                    card.className = 'song-card';
+                    card.innerHTML = `
+                        <div class="song-info">
+                            <div class="song-title">${title}</div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn-action" onclick="playMusic('${audioUrl}')">▶ Dinle</button>
+                            <a href="${audioUrl}" download="${title}.m4a" class="btn-action btn-download" style="text-decoration:none; display:flex; align-items:center;">İndir</a>
+                        </div>
+                    `;
+                    resultsList.appendChild(card);
+                });
+            } catch (err) {
+                resultsList.innerHTML = "<p style='text-align:center; color:#ff4444;'>Bağlantı hatası oluştu, lütfen tekrar deneyin.</p>";
             }
-
-            document.getElementById('welcomeCard').style.display = 'none';
-            let resContainer = document.getElementById('results-container');
-            resContainer.style.display = 'block';
-
-            let embedArea = document.getElementById('embedArea');
-            
-            // YouTube arama sonuçlarını doğrudan oynatıcı listesi olarak uygulamaya gömüyoruz
-            let targetUrl = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1`;
-            
-            embedArea.innerHTML = `<iframe src="${targetUrl}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         }
 
-        document.getElementById('searchInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                searchInApp();
+        function playMusic(url) {
+            let playerBar = document.getElementById('playerBar');
+            let audioPlayer = document.getElementById('audioPlayer');
+            playerBar.style.display = 'flex';
+            audioPlayer.src = url;
+            audioPlayer.play();
+        }
+
+        function loadDeviceMusic(input) {
+            let list = document.getElementById('myMusicList');
+            if(input.files.length > 0) {
+                list.innerHTML = "";
+                Array.from(input.files).forEach(file => {
+                    let songUrl = URL.createObjectURL(file);
+                    let card = document.createElement('div');
+                    card.className = 'song-card';
+                    card.innerHTML = `
+                        <div class="song-info">
+                            <div class="song-title">${file.name}</div>
+                        </div>
+                        <button class="btn-action" onclick="playMusic('${songUrl}')">▶ Oynat</button>
+                    `;
+                    list.appendChild(card);
+                });
             }
-        });
+        }
     </script>
 </body>
 </html>
