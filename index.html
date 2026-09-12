@@ -6,7 +6,7 @@
     <title>CepMelodi</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #0f0c29; color: #fff; min-height: 100vh; padding-bottom: 110px; }
+        body { background: #0f0c29; color: #fff; min-height: 100vh; padding-bottom: 90px; }
         
         header { padding: 20px; text-align: center; font-size: 22px; font-weight: bold; color: #00f2fe; }
         
@@ -17,17 +17,10 @@
 
         .container { padding: 10px 20px; max-width: 600px; margin: 0 auto; }
         
-        .song-card { background: rgba(255,255,255,0.07); padding: 12px 15px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1); }
-        .song-info { flex: 1; overflow: hidden; margin-right: 10px; }
-        .song-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+        .song-card { background: rgba(255,255,255,0.07); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .song-title { font-size: 15px; font-weight: bold; color: #00f2fe; margin-bottom: 10px; }
         
-        .btn-group { display: flex; gap: 6px; }
-        .btn-action { background: #00f2fe; border: none; color: #0f0c29; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; text-decoration: none; display: flex; align-items: center; }
-        .btn-download { background: #00ff88; }
-
-        /* Sabit Alt Oynatıcı */
-        .player-bar { position: fixed; bottom: 70px; left: 0; width: 100%; background: #1a1638; padding: 10px 20px; display: none; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); }
-        .player-bar audio { width: 100%; height: 35px; }
+        iframe { width: 100%; height: 200px; border-radius: 10px; border: none; }
 
         .page { display: none; }
         .page.active { display: block; }
@@ -46,11 +39,11 @@
         <div class="search-area">
             <div class="search-row">
                 <input type="text" id="urlInput" placeholder="YouTube şarkı linkini buraya yapıştır...">
-                <button onclick="processLink()">Ekle</button>
+                <button onclick="processLink()">Ekle & Oynat</button>
             </div>
         </div>
         <div class="container" id="resultsList">
-            <p style="text-align:center; color:#888; margin-top:30px;">YouTube linkini yapıştırarak hızlıca müzik ekleyin.</p>
+            <p style="text-align:center; color:#888; margin-top:30px;">YouTube linkini yapıştırarak müziği anında ekleyin.</p>
         </div>
     </div>
 
@@ -60,11 +53,6 @@
         <div class="container" id="myMusicList">
             <p style="text-align:center; color:#888;">Henüz eklenen müzik yok.</p>
         </div>
-    </div>
-
-    <!-- SABİT OYNATICI -->
-    <div class="player-bar" id="playerBar">
-        <audio id="audioPlayer" controls></audio>
     </div>
 
     <!-- ALT MENÜ -->
@@ -102,60 +90,39 @@
                 return;
             }
 
-            resultsList.innerHTML = "<p style='text-align:center; color:#00f2fe;'>Şarkı bilgileri alınıyor...</p>";
+            resultsList.innerHTML = "<p style='text-align:center; color:#00f2fe;'>Şarkı yükleniyor...</p>";
 
             try {
-                // Şarkı adını YouTube'un resmi oembed servisi üzerinden tamamen ücretsiz ve hatasız çekiyoruz
                 let res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
                 let data = await res.json();
                 let songTitle = data.title || "Halit Bilgiç Şarkısı";
 
-                // Doğrudan kararlı oynatıcı ve ses kaynağı
-                let streamUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-
                 resultsList.innerHTML = "";
+                addSongCard(songTitle, videoId, 'resultsList');
+                addSongCard(songTitle, videoId, 'myMusicList');
 
-                let card = document.createElement('div');
-                card.className = 'song-card';
-                card.innerHTML = `
-                    <div class="song-info">
-                        <div class="song-title">${songTitle}</div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn-action" onclick="playEmbed('${videoId}')">▶ Dinle</button>
-                    </div>
-                `;
-                resultsList.appendChild(card);
-
-                addToMyMusic(songTitle, videoId);
                 document.getElementById('urlInput').value = "";
             } catch (err) {
-                resultsList.innerHTML = "<p style='text-align:center; color:#ff4444;'>Şarkı bilgisi alınamadı, lütfen tekrar deneyin.</p>";
+                // Eğer oembed engellenirse varsayılan isimle kartı yine de oluşturur
+                resultsList.innerHTML = "";
+                addSongCard("YouTube Müzik Parçası", videoId, 'resultsList');
+                addSongCard("YouTube Müzik Parçası", videoId, 'myMusicList');
             }
         }
 
-        function playEmbed(videoId) {
-            let playerBar = document.getElementById('playerBar');
-            playerBar.style.display = 'flex';
-            // Uygulama içinde kapanmadan çalması için mini oynatıcı alanına iframe entegre edebiliriz
-            playerBar.innerHTML = `<iframe width="100%" height="45" src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0" allow="autoplay"></iframe>`;
-        }
-
-        function addToMyMusic(title, videoId) {
-            let myMusicList = document.getElementById('myMusicList');
-            if(myMusicList.innerHTML.includes("Henüz eklenen müzik yok.")) {
-                myMusicList.innerHTML = "";
+        function addSongCard(title, videoId, targetId) {
+            let container = document.getElementById(targetId);
+            if(container.innerHTML.includes("Henüz eklenen müzik yok.") || container.innerHTML.includes("YouTube linkini yapıştırarak")) {
+                container.innerHTML = "";
             }
 
             let card = document.createElement('div');
             card.className = 'song-card';
             card.innerHTML = `
-                <div class="song-info">
-                    <div class="song-title">${title}</div>
-                </div>
-                <button class="btn-action" onclick="playEmbed('${videoId}')">▶ Oynat</button>
+                <div class="song-title">${title}</div>
+                <iframe src="https://www.youtube.com/embed/${videoId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             `;
-            myMusicList.appendChild(card);
+            container.appendChild(card);
         }
     </script>
 </body>
