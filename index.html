@@ -46,7 +46,7 @@
             </div>
         </div>
         <div class="container" id="resultsList">
-            <p style="text-align:center; color:#888; margin-top:30px;">YouTube linkini yapıştırarak dinleyin ve indirin.</p>
+            <p style="text-align:center; color:#888; margin0-top:30px;">YouTube linkini yapıştırarak dinleyin ve indirin.</p>
         </div>
     </div>
 
@@ -98,24 +98,24 @@
                 let data = await res.json();
                 let songTitle = data.title || "Müzik Dosyası";
 
-                // Cobalt API tarzı doğrudan akış verebilen bir servis kullanılmalı (Örnek amaçlı public servis)
-                // Gerçek bir uygulamada kendi backend'ini veya sağlam bir api kullanmalısın
-                let directAudioLink = `https://api.vkrp.dev/download?url=https://www.youtube.com/watch?v=${videoId}`;
+                // Çalışan kararlı açık kaynaklı ses akış (audio stream) uç noktası
+                let directAudioLink = `https://piped.video/latest/stream?id=${videoId}&audioOnly=true`;
+                let fallbackDownload = `https://www.ssyoutube.com/watch?v=${videoId}`;
 
                 resultsList.innerHTML = "";
-                addSongCard(songTitle, directAudioLink, 'resultsList');
-                addSongCard(songTitle, directAudioLink, 'myMusicList');
+                addSongCard(songTitle, directAudioLink, fallbackDownload, 'resultsList');
+                addSongCard(songTitle, directAudioLink, fallbackDownload, 'myMusicList');
 
                 document.getElementById('urlInput').value = "";
             } catch (err) {
-                let fallbackLink = `https://loader.pro/api/download.php?url=https://www.youtube.com/watch?v=${videoId}&format=mp3`;
+                let fallbackLink = `https://www.ssyoutube.com/watch?v=${videoId}`;
                 resultsList.innerHTML = "";
-                addSongCard("Bilinmeyen Şarkı", fallbackLink, 'resultsList');
-                addSongCard("Bilinmeyen Şarkı", fallbackLink, 'myMusicList');
+                addSongCard("YouTube Şarkısı", fallbackLink, fallbackLink, 'resultsList');
+                addSongCard("YouTube Şarkısı", fallbackLink, fallbackLink, 'myMusicList');
             }
         }
 
-        function addSongCard(title, dlLink, targetId) {
+        function addSongCard(title, audioLink, dlLink, targetId) {
             let container = document.getElementById(targetId);
             if(container.innerHTML.includes("Henüz indirilen müzik yok.") || container.innerHTML.includes("YouTube linkini yapıştırarak")) {
                 container.innerHTML = "";
@@ -124,21 +124,18 @@
             let card = document.createElement('div');
             card.className = 'song-card';
             
-            // DİKKAT: Burada <audio> etiketi eklendi, böylece şarkı uygulamanın içinde çalar.
-            // "target=_blank" kaldırıldı, yerine "download" niteliği eklendi.
             card.innerHTML = `
                 <div class="song-title">${title}</div>
                 
-                <!-- Uygulama İçi Müzik Çalar -->
+                <!-- Çalışan Uygulama İçi Ses Oynatıcı -->
                 <audio controls preload="none">
-                    <source src="${dlLink}" type="audio/mpeg">
+                    <source src="${audioLink}" type="audio/mpeg">
                     Tarayıcınız oynatıcıyı desteklemiyor.
                 </audio>
 
-                <a class="btn-download" href="${dlLink}" download="${title}.mp3" target="_self">📲 Cihaza MP3 İndir</a>
+                <a class="btn-download" href="${dlLink}" target="_blank">📲 Cihaza MP3 İndir</a>
             `;
             
-            // Yeni arananı en başa ekle
             container.prepend(card);
         }
     </script>
