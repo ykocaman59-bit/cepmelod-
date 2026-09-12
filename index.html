@@ -20,6 +20,10 @@
         .song-card { background: rgba(255,255,255,0.07); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 10px; }
         .song-title { font-size: 15px; font-weight: bold; color: #00f2fe; }
         
+        /* Oynatıcı (Player) stili */
+        audio { width: 100%; height: 40px; border-radius: 20px; outline: none; }
+        audio::-webkit-media-controls-panel { background-color: #13102b; color: #fff; }
+        
         .btn-download { background: #00ff88; border: none; color: #0f0c29; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none; display: block; font-size: 14px; }
 
         .page { display: none; }
@@ -33,32 +37,29 @@
 </head>
 <body>
 
-    <!-- ANA SAYFA -->
     <div id="home-page" class="page active">
         <header>🎵 CepMelodi</header>
         <div class="search-area">
             <div class="search-row">
                 <input type="text" id="urlInput" placeholder="YouTube şarkı linkini buraya yapıştır...">
-                <button onclick="processLink()">Dönüştür & İndir</button>
+                <button onclick="processLink()">Bul & Dinle</button>
             </div>
         </div>
         <div class="container" id="resultsList">
-            <p style="text-align:center; color:#888; margin-top:30px;">YouTube linkini yapıştırarak MP3 olarak indirin.</p>
+            <p style="text-align:center; color:#888; margin-top:30px;">YouTube linkini yapıştırarak dinleyin ve indirin.</p>
         </div>
     </div>
 
-    <!-- MÜZİKLERİM -->
     <div id="downloads-page" class="page">
-        <header>📂 İndirilenler</header>
+        <header>📂 İndirilenler & Geçmiş</header>
         <div class="container" id="myMusicList">
             <p style="text-align:center; color:#888;">Henüz indirilen müzik yok.</p>
         </div>
     </div>
 
-    <!-- ALT MENÜ -->
     <nav>
         <button id="nav-home" class="active" onclick="switchTab('home')"><span>🏠</span> Ana Sayfa</button>
-        <button id="nav-downloads" onclick="switchTab('downloads')"><span>📂</span> İndirilenler</button>
+        <button id="nav-downloads" onclick="switchTab('downloads')"><span>📂</span> Müziklerim</button>
     </nav>
 
     <script>
@@ -90,26 +91,27 @@
                 return;
             }
 
-            resultsList.innerHTML = "<p style='text-align:center; color:#00f2fe;'>MP3 hazırlanıyor, lütfen bekleyin...</p>";
+            resultsList.innerHTML = "<p style='text-align:center; color:#00f2fe;'>Şarkı hazırlanıyor, lütfen bekleyin...</p>";
 
             try {
                 let res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
                 let data = await res.json();
                 let songTitle = data.title || "Müzik Dosyası";
 
-                // Doğrudan çalışan kararlı kamuya açık mp3 dönüştürme API uç noktası
-                let downloadLink = `https://api.vkrp.dev/download?url=https://www.youtube.com/watch?v=${videoId}`;
+                // Cobalt API tarzı doğrudan akış verebilen bir servis kullanılmalı (Örnek amaçlı public servis)
+                // Gerçek bir uygulamada kendi backend'ini veya sağlam bir api kullanmalısın
+                let directAudioLink = `https://api.vkrp.dev/download?url=https://www.youtube.com/watch?v=${videoId}`;
 
                 resultsList.innerHTML = "";
-                addSongCard(songTitle, downloadLink, 'resultsList');
-                addSongCard(songTitle, downloadLink, 'myMusicList');
+                addSongCard(songTitle, directAudioLink, 'resultsList');
+                addSongCard(songTitle, directAudioLink, 'myMusicList');
 
                 document.getElementById('urlInput').value = "";
             } catch (err) {
                 let fallbackLink = `https://loader.pro/api/download.php?url=https://www.youtube.com/watch?v=${videoId}&format=mp3`;
                 resultsList.innerHTML = "";
-                addSongCard("YouTube Şarkısı", fallbackLink, 'resultsList');
-                addSongCard("YouTube Şarkısı", fallbackLink, 'myMusicList');
+                addSongCard("Bilinmeyen Şarkı", fallbackLink, 'resultsList');
+                addSongCard("Bilinmeyen Şarkı", fallbackLink, 'myMusicList');
             }
         }
 
@@ -121,11 +123,23 @@
 
             let card = document.createElement('div');
             card.className = 'song-card';
+            
+            // DİKKAT: Burada <audio> etiketi eklendi, böylece şarkı uygulamanın içinde çalar.
+            // "target=_blank" kaldırıldı, yerine "download" niteliği eklendi.
             card.innerHTML = `
                 <div class="song-title">${title}</div>
-                <a class="btn-download" href="${dlLink}" target="_blank">📲 Cihaza MP3 İndir</a>
+                
+                <!-- Uygulama İçi Müzik Çalar -->
+                <audio controls preload="none">
+                    <source src="${dlLink}" type="audio/mpeg">
+                    Tarayıcınız oynatıcıyı desteklemiyor.
+                </audio>
+
+                <a class="btn-download" href="${dlLink}" download="${title}.mp3" target="_self">📲 Cihaza MP3 İndir</a>
             `;
-            container.appendChild(card);
+            
+            // Yeni arananı en başa ekle
+            container.prepend(card);
         }
     </script>
 </body>
